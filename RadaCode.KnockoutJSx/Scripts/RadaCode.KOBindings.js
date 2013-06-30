@@ -1,4 +1,33 @@
-﻿$(function() {
+﻿$(function () {
+    
+    /* DESCRIPTION FOR singleClick binding
+       Used to replace standard click binding to allow smart sinlge click and double click procession
+   */
+    /* USAGE EXAMPLE FOR singleClick binding
+        <div data-bind="singleClick: clicked, event : { dblclick: double }">
+            Click Me
+        </div>
+     */
+    ko.bindingHandlers.singleClick = {
+        init: function(element, valueAccessor) {
+            var handler = valueAccessor(),
+                delay = 200,
+                clickTimeout = false;
+
+            $(element).click(function() {
+                if (clickTimeout !== false) {
+                    clearTimeout(clickTimeout);
+                    clickTimeout = false;
+                } else {
+                    clickTimeout = setTimeout(function() {
+                        clickTimeout = false;
+                        handler();
+                    }, delay);
+                }
+            });
+        }
+    };
+
 
     /* USAGE EXAMPLE FOR jqAutocomple binding
 
@@ -17,7 +46,7 @@
     //jqAutoSourceInputValue -- the property that should be displayed in the input box
     //jqAutoSourceValue -- the property to use for the value
     ko.bindingHandlers.jqAuto = {
-        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
+        init: function (element, valueAccessor, allBindingsAccessor) {
             var options = valueAccessor() || {},
                 allBindings = allBindingsAccessor(),
                 unwrap = ko.utils.unwrapObservable,
@@ -108,7 +137,7 @@
             //if we are writing a different property to the input than we are writing to the model, then locate the object
             if (valueProp && inputValueProp !== valueProp) {
                 var source = unwrap(allBindings.jqAutoSource) || [];
-                var modelValue = ko.utils.arrayFirst(source, function (item) {
+                modelValue = ko.utils.arrayFirst(source, function (item) {
                     return unwrap(item[valueProp]) === modelValue;
                 }) || {};
             }
@@ -318,6 +347,43 @@
     ko.bindingHandlers.stopBinding = {
         init: function () {
             return { controlsDescendantBindings: true };
+        }
+    };
+            
+    ko.bindingHandlers.inlineInput = {
+        init: function (element, valueAccessor, allBindingsAccessor) {
+            var target = $(element);
+            var input = $('<input />', { 'type': 'text', 'class': target.attr('class') + ' inline-input', 'style': 'display:none' });
+
+            ko.applyBindingsToNode(target.get(0), { html: valueAccessor() });
+
+            var shouldEnableEdit = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
+            if (shouldEnableEdit) {
+
+                target.after(input);
+
+                ko.applyBindingsToNode(input.get(0), { value: valueAccessor() });
+
+                target.click(function() {
+                    input.width(target.width());
+                    target.hide();
+                    input.show();
+                    input.focus();
+                });
+
+                input.blur(function() {
+                    target.show();
+                    input.hide();
+                });
+
+                input.keypress(function(e) {
+                    if (e.keyCode == 13) {
+                        target.show();
+                        input.hide();
+                    }
+                    ;
+                });
+            }
         }
     };
 });
