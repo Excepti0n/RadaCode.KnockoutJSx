@@ -1,0 +1,11 @@
+﻿input.inline-input
+{
+    border: none;
+    background-color: transparent;
+    padding: 0;
+    height: auto;
+    line-height: inherit;
+    font-size: inherit;
+    font-family: inherit;
+    margin-bottom: auto;
+}
