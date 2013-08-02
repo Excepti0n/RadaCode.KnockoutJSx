@@ -1,5 +1,5 @@
 ﻿$(function () {
-    
+
     /* DESCRIPTION FOR singleClick binding
        Used to replace standard click binding to allow smart sinlge click and double click procession
    */
@@ -9,17 +9,17 @@
         </div>
      */
     ko.bindingHandlers.singleClick = {
-        init: function(element, valueAccessor) {
+        init: function (element, valueAccessor) {
             var handler = valueAccessor(),
                 delay = 200,
                 clickTimeout = false;
 
-            $(element).click(function() {
+            $(element).click(function () {
                 if (clickTimeout !== false) {
                     clearTimeout(clickTimeout);
                     clickTimeout = false;
                 } else {
-                    clickTimeout = setTimeout(function() {
+                    clickTimeout = setTimeout(function () {
                         clickTimeout = false;
                         handler();
                     }, delay);
@@ -27,7 +27,25 @@
             });
         }
     };
+    app.Loading = ko.observable(false);
+    app.Loading.subscribe(function (newValue) {
+        if (newValue) {
+            var height = $(document).height();
+            $("#loading-panel").css('height', height);
+            $("#loading-panel").css('display', 'block');
 
+        }
+
+        else {
+            $('#loading-panel')
+      .delay(200)
+      .queue(function (next) {
+          $(this).css('display', 'none');
+          next();
+      });
+
+        }
+    });
 
     /* USAGE EXAMPLE FOR jqAutocomple binding
 
@@ -73,9 +91,9 @@
             };
 
             //on a change, make sure that it is a valid value or clear out the model value
-            options.change = function(event, ui) {
+            options.change = function (event, ui) {
                 var currentValue = $(element).val();
-                var matchingItem = ko.utils.arrayFirst(unwrap(source), function(item) {
+                var matchingItem = ko.utils.arrayFirst(unwrap(source), function (item) {
                     return unwrap(inputValueProp ? item[inputValueProp] : item) === currentValue;
                 });
 
@@ -109,7 +127,7 @@
             });
 
             if (query) {
-                options.source = function(request, response) {
+                options.source = function (request, response) {
                     currentResponse = response;
                     query.call(this, request.term, mappedSource);
                 };
@@ -191,7 +209,7 @@
             $(element).trigger("liszt:updated");
         }
     };
-    
+
     ko.bindingHandlers.datepicker = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             //initialize datepicker with some optional options
@@ -220,7 +238,7 @@
             }
         }
     };
-    
+
     ko.bindingHandlers.jQRangePicker = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             var options = ko.utils.unwrapObservable(valueAccessor()) || {};
@@ -233,8 +251,8 @@
                     var value = allBindingsAccessor().value;
                     value(options.resultInterpreter(data.values));
                 });
-                
-                if(options.prohibitLeftChange) {
+
+                if (options.prohibitLeftChange) {
                     $(element).bind("valuesChanging", function (event, data) {
                         if (options.leftFix != data.values.min) {
                             $(element).rangeSlider("min", options.leftFix);
@@ -244,7 +262,7 @@
             }, 0);
         }
     };
-    
+
     ko.bindingHandlers.tagsinput = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             var options = ko.utils.unwrapObservable(valueAccessor()) || {};
@@ -261,18 +279,18 @@
                 if (options.defaultTags && options.defaultTags()) {
                     $(element).importTags(options.defaultTags().join(","));
                 }
-                
+
             }, 0);
 
         }
     };
 
     ko.bindingHandlers.dialog = {
-        init: function(element, valueAccessor, allBindingsAccessor) {
-            var options = ko.utils.unwrapObservable(valueAccessor()) || { };
+        init: function (element, valueAccessor, allBindingsAccessor) {
+            var options = ko.utils.unwrapObservable(valueAccessor()) || {};
             //do in a setTimeout, so the applyBindings doesn't bind twice from element being copied and moved to bottom
-            setTimeout(function() {
-                options.close = function() {
+            setTimeout(function () {
+                options.close = function () {
                     allBindingsAccessor().dialogVisible(false);
                 };
                 options.autoOpen = ko.utils.unwrapObservable(allBindingsAccessor().dialogVisible);
@@ -280,18 +298,18 @@
             }, 0);
 
             //handle disposal (not strictly necessary in this scenario)
-            ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+            ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
                 $(element).dialog("destroy");
             });
         },
-        update: function(element, valueAccessor, allBindingsAccessor) {
+        update: function (element, valueAccessor, allBindingsAccessor) {
             var shouldBeOpen = ko.utils.unwrapObservable(allBindingsAccessor().dialogVisible);
             if ($(element).data('uiDialog')) {
                 $(element).dialog(shouldBeOpen ? "open" : "close");
             }
         }
     };
-    
+
     ko.bindingHandlers.ckeditor = {
         init: function (element, valueAccessor, allBindingsAccessor, context) {
             var options = allBindingsAccessor().ckeditorOptions || {};
@@ -316,7 +334,7 @@
             });
         }
     };
-    
+
     ko.bindingHandlers.executeOnEnter = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var allBindings = allBindingsAccessor();
@@ -330,7 +348,7 @@
             });
         }
     };
-    
+
     ko.bindingHandlers.fadeVisible = {
         init: function (element, valueAccessor) {
             // Initially set the element to be instantly visible/hidden depending on the value
@@ -343,13 +361,13 @@
             ko.utils.unwrapObservable(value) ? $(element).fadeIn() : $(element).fadeOut();
         }
     };
-    
+
     ko.bindingHandlers.stopBinding = {
         init: function () {
             return { controlsDescendantBindings: true };
         }
     };
-            
+
     ko.bindingHandlers.inlineInput = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             var target = $(element);
@@ -364,19 +382,19 @@
 
                 ko.applyBindingsToNode(input.get(0), { value: valueAccessor() });
 
-                target.click(function() {
+                target.click(function () {
                     input.width(target.width());
                     target.hide();
                     input.show();
                     input.focus();
                 });
 
-                input.blur(function() {
+                input.blur(function () {
                     target.show();
                     input.hide();
                 });
 
-                input.keypress(function(e) {
+                input.keypress(function (e) {
                     if (e.keyCode == 13) {
                         target.show();
                         input.hide();
