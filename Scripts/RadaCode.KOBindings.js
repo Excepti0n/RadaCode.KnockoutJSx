@@ -1,8 +1,50 @@
-﻿$(function () {
+﻿$(function() {
+
+    /* DESCRIPTION FOR globalLoading binding
+    Used to bind standard loading panel functionality to an element
+    */
+    /* USAGE EXAMPLE FOR globalLoading binding
+        <div data-bind="globalLoading: IsLoading">
+            I am a loading panel
+        </div>
+     */
+    ko.bindingHandlers.globalLoading = {
+        init: function (element, valueAccessor) {
+            
+            var isLoading = valueAccessor();
+            if (isLoading()) {
+                var height = $(document).height();
+                $(element).css('height', height);
+                $(element).css('display', 'block');
+
+            } else {
+                $(element).delay(200).queue(function (next) {
+                    $(this).css('display', 'none');
+                    next();
+                });
+            }
+        },
+        update: function(element,
+            valueAccessor) {
+
+            var isLoading = valueAccessor();
+            if (isLoading()) {
+                var height = $(document).height();
+                $(element).css('height', height);
+                $(element).css('display', 'block');
+
+            } else {
+                $(element).delay(200).queue(function(next) {
+                    $(this).css('display', 'none');
+                    next();
+                });
+            }
+        }
+    };
 
     /* DESCRIPTION FOR singleClick binding
-       Used to replace standard click binding to allow smart sinlge click and double click procession
-   */
+        Used to replace standard click binding to allow smart sinlge click and double click procession
+    */
     /* USAGE EXAMPLE FOR singleClick binding
         <div data-bind="singleClick: clicked, event : { dblclick: double }">
             Click Me
@@ -27,25 +69,82 @@
             });
         }
     };
-    app.Loading = ko.observable(false);
-    app.Loading.subscribe(function (newValue) {
-        if (newValue) {
-            var height = $(document).height();
-            $("#loading-panel").css('height', height);
-            $("#loading-panel").css('display', 'block');
+    
 
+    ko.bindingHandlers.inlineTextArea = {
+        init: function (element, valueAccessor, allBindingsAccessor) {
+            var target = $(element);
+            var input = $('<textarea />', { 'class': target.attr('class') + ' inline-input', 'style': 'display:none' });
+
+            ko.applyBindingsToNode(target.get(0), { html: valueAccessor() });
+
+            var shouldEnableEdit = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
+            if (shouldEnableEdit) {
+
+                target.after(input);
+
+                ko.applyBindingsToNode(input.get(0), { value: valueAccessor() });
+
+                target.click(function () {
+                    input.width(target.width());
+                    target.hide();
+                    input.show();
+                    input.focus();
+                });
+
+                input.blur(function () {
+                    target.show();
+                    input.hide();
+                });
+
+                input.keypress(function (e) {
+                    if (e.keyCode == 13) {
+                        target.show();
+                        input.hide();
+                    }
+                    ;
+                });
+            }
         }
+    };
 
-        else {
-            $('#loading-panel')
-      .delay(200)
-      .queue(function (next) {
-          $(this).css('display', 'none');
-          next();
-      });
 
+    ko.bindingHandlers.inlineInput = {
+        init: function (element, valueAccessor, allBindingsAccessor) {
+            var target = $(element);
+            var input = $('<input />', { 'type': 'text', 'class': target.attr('class') + ' inline-input', 'style': 'display:none' });
+
+            ko.applyBindingsToNode(target.get(0), { html: valueAccessor() });
+
+            var shouldEnableEdit = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
+            if (shouldEnableEdit) {
+
+                target.after(input);
+
+                ko.applyBindingsToNode(input.get(0), { value: valueAccessor() });
+
+                target.click(function() {
+                    input.width(target.width());
+                    target.hide();
+                    input.show();
+                    input.focus();
+                });
+
+                input.blur(function() {
+                    target.show();
+                    input.hide();
+                });
+
+                input.keypress(function(e) {
+                    if (e.keyCode == 13) {
+                        target.show();
+                        input.hide();
+                    }
+                    ;
+                });
+            }
         }
-    });
+    };
 
     /* USAGE EXAMPLE FOR jqAutocomple binding
 
@@ -64,7 +163,7 @@
     //jqAutoSourceInputValue -- the property that should be displayed in the input box
     //jqAutoSourceValue -- the property to use for the value
     ko.bindingHandlers.jqAuto = {
-        init: function (element, valueAccessor, allBindingsAccessor) {
+        init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var options = valueAccessor() || {},
                 allBindings = allBindingsAccessor(),
                 unwrap = ko.utils.unwrapObservable,
@@ -91,9 +190,9 @@
             };
 
             //on a change, make sure that it is a valid value or clear out the model value
-            options.change = function (event, ui) {
+            options.change = function(event, ui) {
                 var currentValue = $(element).val();
-                var matchingItem = ko.utils.arrayFirst(unwrap(source), function (item) {
+                var matchingItem = ko.utils.arrayFirst(unwrap(source), function(item) {
                     return unwrap(inputValueProp ? item[inputValueProp] : item) === currentValue;
                 });
 
@@ -127,7 +226,7 @@
             });
 
             if (query) {
-                options.source = function (request, response) {
+                options.source = function(request, response) {
                     currentResponse = response;
                     query.call(this, request.term, mappedSource);
                 };
@@ -155,7 +254,7 @@
             //if we are writing a different property to the input than we are writing to the model, then locate the object
             if (valueProp && inputValueProp !== valueProp) {
                 var source = unwrap(allBindings.jqAutoSource) || [];
-                modelValue = ko.utils.arrayFirst(source, function (item) {
+                var modelValue = ko.utils.arrayFirst(source, function (item) {
                     return unwrap(item[valueProp]) === modelValue;
                 }) || {};
             }
@@ -209,36 +308,56 @@
             $(element).trigger("liszt:updated");
         }
     };
-
+    
     ko.bindingHandlers.datepicker = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             //initialize datepicker with some optional options
             var options = allBindingsAccessor().datepickerOptions || {};
-            $(element).datepicker(options);
 
-            //handle the field changing
-            ko.utils.registerEventHandler(element, "change", function () {
-                var observable = valueAccessor();
-                //observable($(element).datepicker("getDate"));
-                observable($.datepicker.formatDate(options.dateFormat, $(this).datepicker("getDate")));
-            });
+            var initialize = true;
 
-            //handle disposal (if KO removes by the template binding)
-            ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
-                $(element).datepicker("destroy");
-            });
+            if ((allBindingsAccessor().inAdminMode !== undefined)) {
+                initialize = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
+            }
 
+            if (initialize) {
+
+                $(element).datepicker(options);
+
+                //handle the field changing
+                ko.utils.registerEventHandler(element, "change", function() {
+                    var observable = valueAccessor();
+                    if (!options.dateFormat) {
+                        observable($(element).datepicker("getDate"));
+                    } else {
+                        observable($.datepicker.formatDate(options.dateFormat, $(this).datepicker("getDate")));
+                    }
+                });
+
+                //handle disposal (if KO removes by the template binding)
+                ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
+                    $(element).datepicker("destroy");
+                });
+            }
         },
-        update: function (element, valueAccessor) {
-            var value = ko.utils.unwrapObservable(valueAccessor()),
-                current = $(element).datepicker("getDate");
+        update: function (element, valueAccessor, allBindingsAccessor) {
+            var initialize = true;
 
-            if (value - current !== 0) {
-                $(element).datepicker("setDate", value);
+            if ((allBindingsAccessor().inAdminMode !== undefined)) {
+                initialize = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
+            }
+
+            if (initialize) {
+                var value = ko.utils.unwrapObservable(valueAccessor()),
+                    current = $(element).datepicker("getDate");
+
+                if (value - current !== 0) {
+                    $(element).datepicker("setDate", value);
+                }
             }
         }
     };
-
+    
     ko.bindingHandlers.jQRangePicker = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             var options = ko.utils.unwrapObservable(valueAccessor()) || {};
@@ -251,8 +370,8 @@
                     var value = allBindingsAccessor().value;
                     value(options.resultInterpreter(data.values));
                 });
-
-                if (options.prohibitLeftChange) {
+                
+                if(options.prohibitLeftChange) {
                     $(element).bind("valuesChanging", function (event, data) {
                         if (options.leftFix != data.values.min) {
                             $(element).rangeSlider("min", options.leftFix);
@@ -262,7 +381,7 @@
             }, 0);
         }
     };
-
+    
     ko.bindingHandlers.tagsinput = {
         init: function (element, valueAccessor, allBindingsAccessor) {
             var options = ko.utils.unwrapObservable(valueAccessor()) || {};
@@ -279,18 +398,18 @@
                 if (options.defaultTags && options.defaultTags()) {
                     $(element).importTags(options.defaultTags().join(","));
                 }
-
+                
             }, 0);
 
         }
     };
 
     ko.bindingHandlers.dialog = {
-        init: function (element, valueAccessor, allBindingsAccessor) {
-            var options = ko.utils.unwrapObservable(valueAccessor()) || {};
+        init: function(element, valueAccessor, allBindingsAccessor) {
+            var options = ko.utils.unwrapObservable(valueAccessor()) || { };
             //do in a setTimeout, so the applyBindings doesn't bind twice from element being copied and moved to bottom
-            setTimeout(function () {
-                options.close = function () {
+            setTimeout(function() {
+                options.close = function() {
                     allBindingsAccessor().dialogVisible(false);
                 };
                 options.autoOpen = ko.utils.unwrapObservable(allBindingsAccessor().dialogVisible);
@@ -298,18 +417,18 @@
             }, 0);
 
             //handle disposal (not strictly necessary in this scenario)
-            ko.utils.domNodeDisposal.addDisposeCallback(element, function () {
+            ko.utils.domNodeDisposal.addDisposeCallback(element, function() {
                 $(element).dialog("destroy");
             });
         },
-        update: function (element, valueAccessor, allBindingsAccessor) {
+        update: function(element, valueAccessor, allBindingsAccessor) {
             var shouldBeOpen = ko.utils.unwrapObservable(allBindingsAccessor().dialogVisible);
             if ($(element).data('uiDialog')) {
                 $(element).dialog(shouldBeOpen ? "open" : "close");
             }
         }
     };
-
+    
     ko.bindingHandlers.ckeditor = {
         init: function (element, valueAccessor, allBindingsAccessor, context) {
             var options = allBindingsAccessor().ckeditorOptions || {};
@@ -334,7 +453,7 @@
             });
         }
     };
-
+    
     ko.bindingHandlers.executeOnEnter = {
         init: function (element, valueAccessor, allBindingsAccessor, viewModel) {
             var allBindings = allBindingsAccessor();
@@ -348,7 +467,7 @@
             });
         }
     };
-
+    
     ko.bindingHandlers.fadeVisible = {
         init: function (element, valueAccessor) {
             // Initially set the element to be instantly visible/hidden depending on the value
@@ -361,47 +480,10 @@
             ko.utils.unwrapObservable(value) ? $(element).fadeIn() : $(element).fadeOut();
         }
     };
-
+    
     ko.bindingHandlers.stopBinding = {
         init: function () {
             return { controlsDescendantBindings: true };
-        }
-    };
-
-    ko.bindingHandlers.inlineInput = {
-        init: function (element, valueAccessor, allBindingsAccessor) {
-            var target = $(element);
-            var input = $('<input />', { 'type': 'text', 'class': target.attr('class') + ' inline-input', 'style': 'display:none' });
-
-            ko.applyBindingsToNode(target.get(0), { html: valueAccessor() });
-
-            var shouldEnableEdit = ko.utils.unwrapObservable(allBindingsAccessor().inAdminMode);
-            if (shouldEnableEdit) {
-
-                target.after(input);
-
-                ko.applyBindingsToNode(input.get(0), { value: valueAccessor() });
-
-                target.click(function () {
-                    input.width(target.width());
-                    target.hide();
-                    input.show();
-                    input.focus();
-                });
-
-                input.blur(function () {
-                    target.show();
-                    input.hide();
-                });
-
-                input.keypress(function (e) {
-                    if (e.keyCode == 13) {
-                        target.show();
-                        input.hide();
-                    }
-                    ;
-                });
-            }
         }
     };
 });
